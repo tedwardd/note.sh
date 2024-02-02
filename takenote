@@ -1,0 +1,30 @@
+#!/usr/bin/env zsh
+
+# $PATH is not set when launched from iTerm profile directly so we need fully qualified binary paths
+fzf="/opt/homebrew/bin/fzf"
+EDITOR="/opt/homebrew/bin/nvim"
+
+note_dir="$HOME/notes"
+note_name=$(find "${note_dir}" | "$fzf" --print-query | xargs) #xargs strips the whitespace
+ec=$?
+
+# fzf --print-query with fzf returns both the query and match if a match is
+# found and only query if no match is found return only the last space
+# delimited value in the return string
+note_name=${note_name#* }
+
+case $ec in
+    0)
+        [[ ${note_name} == "" ]] && exit 0 # if value is empty string, user hit esc at prompt
+        [[ ${note_name} == ${note_dir} ]] && exit 0 # if value == note dir, we can't proceed
+
+        if [[ $(dirname ${note_name}) == "." ]]; then # if dir is "." then it's a new note
+            $EDITOR --clean ${note_dir}/${note_name}.md
+        else
+            $EDITOR --clean ${note_name#* } # if we made it here, we're editing an existing note
+        fi
+        ;;
+    *)
+        exit 1
+        ;;
+esac
